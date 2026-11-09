@@ -136,7 +136,7 @@ function HomePage() {
         <div>
           <p className="eyebrow">WELCOME TO SHOP EASY</p>
           <h1>Good things,<br />made simple.</h1>
-          <p className="hero-copy">A thoughtful little collection for everyday living. Find something useful, lovely, and just right for you.</p>
+          <p className="hero-copy">Explore 54 everyday finds, thoughtfully picked to make life a little simpler.</p>
           <Link className="shop-button" to="/search">Find your next favorite <span>↘</span></Link>
         </div>
         <div className="hero-art" role="img" aria-label="A curated collection of everyday essentials">
