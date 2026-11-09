@@ -60,20 +60,17 @@ docker compose down
 
 To also delete the local MongoDB data and start fresh, use `docker compose down -v`.
 
-## Step 4: Make a GitHub repository and watch CI
+## Step 4: Push this project to GitHub and watch CI
 
-Create an empty GitHub repository named `shopeasy-devops` (do not add a README or license there). In PowerShell from this folder, run:
+This project is connected to `https://github.com/Sanika14-xyz/ShopEasy.git`. Its GitHub repository already had an initial README commit, so the two histories must be merged once. After resolving that merge, push the combined project:
 
 ```powershell
-git init
-git add .
-git commit -m "Build ShopEasy DevOps demo"
-git branch -M main
-git remote add origin https://github.com/YOUR-USERNAME/shopeasy-devops.git
+git add README.md
+git commit -m "Merge GitHub README history"
 git push -u origin main
 ```
 
-Replace `YOUR-USERNAME` with your GitHub username. GitHub Actions runs the tests and frontend build on the push. You can then create a feature branch, make a small change, push it, and open a pull request to see the same checks run before merging.
+GitHub Actions runs the tests and frontend build on the push. You can then create a feature branch, make a small change, push it, and open a pull request to see the same checks run before merging.
 
 ## CI/CD learning map
 
