@@ -24,9 +24,35 @@ jobs:
       - name: Build web app
         run: npm run build
 
+  browser-tests:
+    name: Selenium browser test
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Set up Chrome
+        uses: browser-actions/setup-chrome@v1
+      - name: Start the app
+        run: docker compose up --build --detach --wait --wait-timeout 180
+      - name: Seed the product catalog
+        run: docker compose exec --no-TTY api npm run seed --workspace=@shopeasy/api
+      - name: Test search and shopping bag
+        run: npm run test:e2e
+      - name: Stop the app
+        if: always()
+        run: docker compose down
+
   publish-images:
     name: Publish Docker images
-    needs: test-and-build
+    needs: [test-and-build, browser-tests]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
