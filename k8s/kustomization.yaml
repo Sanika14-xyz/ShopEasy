@@ -3,3 +3,18 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - workloads.yaml
+  - monitoring.yaml
+
+configMapGenerator:
+  - name: prometheus-config
+    files:
+      - prometheus.yml=monitoring/prometheus.yml
+  - name: grafana-datasources
+    files:
+      - prometheus.yml=monitoring/grafana/provisioning/datasources/prometheus.yml
+  - name: grafana-dashboard-provider
+    files:
+      - dashboard.yml=monitoring/grafana/provisioning/dashboards/dashboard.yml
+  - name: grafana-shopeasy-dashboard
+    files:
+      - shopeasy.json=monitoring/grafana/dashboards/shopeasy.json

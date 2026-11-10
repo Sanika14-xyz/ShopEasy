@@ -5,8 +5,9 @@ A small MERN-style e-commerce demo for practicing version control, automated tes
 ## What is included
 
 - React + Vite storefront with a separate welcome page and searchable catalog, product details, cart, About, Contact, and FAQ pages; Express + MongoDB API
-- Jest/Supertest API tests that do not need a running database
+- Jest/Supertest API tests that do not need a running database; Prometheus request metrics at `/api/metrics`
 - Dockerfiles and Docker Compose for the app and MongoDB
+- Local Prometheus and Grafana monitoring with a preconfigured ShopEasy dashboard
 - GitHub Actions workflow for pull requests and pushes to `main`; its browser-test stack pins MongoDB 7 for compatibility with the hosted runner kernel, without changing the local or Kubernetes database
 - Selenium browser test in CI that searches the catalog and adds a product to the bag
 - Optional SonarQube Cloud analysis when its GitHub secrets are configured
@@ -61,6 +62,23 @@ docker compose down
 
 To also delete the local MongoDB data and start fresh, use `docker compose down -v`.
 
+### Optional: add local monitoring to Docker Compose
+
+Start the app together with Prometheus and Grafana (no cloud account required):
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up --build --detach --wait --wait-timeout 180
+docker compose -f docker-compose.yml -f docker-compose.monitoring.yml exec api npm run seed --workspace=@shopeasy/api
+```
+
+Open the storefront at <http://localhost:8080>, Prometheus at <http://localhost:9090/targets>, and Grafana at <http://localhost:3000>. Sign in to Grafana with `admin` / `admin` and set a new password if prompted. The **ShopEasy API** dashboard shows request rate, 95th-percentile latency, server errors, and API process memory. Browse or search products to generate traffic. Monitoring ports are bound to your own computer only.
+
+Stop the stack without deleting its stored data:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.monitoring.yml down
+```
+
 ## Step 4: Try Kubernetes locally (no cloud account or charges)
 
 The `k8s` folder contains a local Kubernetes deployment for Docker Desktop. It runs MongoDB, the API, the storefront, and a one-time job that seeds the 54 sample products. This is a learning setup, not a production security configuration.
@@ -108,6 +126,33 @@ The `k8s` folder contains a local Kubernetes deployment for Docker Desktop. It r
 
    Chrome must be installed. The first run may take longer while Selenium downloads the matching ChromeDriver.
 
+### Add Prometheus and Grafana to local Kubernetes
+
+The Kubernetes manifests also deploy Prometheus and Grafana in the `shopeasy` namespace. They use internal cluster services; access their web pages with local port forwarding:
+
+1. Apply the updated manifests and wait for both monitoring pods:
+
+   ```powershell
+   kubectl apply -k k8s/
+   kubectl rollout status deployment/prometheus -n shopeasy --timeout=180s
+   kubectl rollout status deployment/grafana -n shopeasy --timeout=180s
+   kubectl get pods -n shopeasy
+   ```
+
+2. In separate PowerShell terminals, forward the dashboards:
+
+   ```powershell
+   kubectl port-forward service/prometheus 9090:9090 -n shopeasy
+   ```
+
+   ```powershell
+   kubectl port-forward service/grafana 3000:3000 -n shopeasy
+   ```
+
+3. Open Prometheus at <http://localhost:9090/targets> and confirm `shopeasy-api` is **UP**. Open Grafana at <http://localhost:3000>, sign in with `admin` / `admin`, and open the **ShopEasy API** dashboard. Browse or search the storefront to generate request metrics. Press `Ctrl+C` in each port-forward terminal when finished.
+
+The monitoring data in this local Kubernetes setup is temporary and resets if its pods are recreated. Prometheus and Grafana use additional computer memory, so avoid running the Compose and Kubernetes stacks together on a low-memory computer.
+
 Use `kubectl get pods,services -n shopeasy` to see the running resources. To stop the local Kubernetes demo and remove its namespace and database volume, run `kubectl delete namespace shopeasy`. This does not affect the separate Docker Compose database.
 
 If you rebuild the API image and want to run the seed job again, delete the completed job first, then re-apply it:
@@ -137,7 +182,7 @@ GitHub Actions runs the tests and frontend build on the push. You can then creat
 3. **Quality analysis:** connect a SonarQube Cloud project, update `sonar-project.properties` with your organization and project key, add the repository variable `SONAR_ENABLED` with value `true`, and add `SONAR_TOKEN` and `SONAR_HOST_URL` as repository Actions secrets.
 4. **Containerization and registry:** `api/Dockerfile`, `web/Dockerfile`, and `docker-compose.yml` package and run the app consistently. After CI passes on a push to `main`, the workflow publishes API and web images to GitHub Container Registry (GHCR), tagged `latest` and with the commit SHA. GHCR login uses the automatically provided `GITHUB_TOKEN`; no registry password is committed.
 5. **Current deployment:** Docker Compose starts the app locally. This is a live local demo, not yet a public website or an EKS deployment.
-6. **Next case-study milestones:** deploy the published image to staging Kubernetes; add Selenium browser tests against staging; require approval before production; demonstrate blue-green rollout; then add monitoring/logging/Slack alerts. EKS and these extra services can incur costs, so set them up only with your teacher's approval and a budget. Do not commit cloud credentials; use GitHub Actions secrets and scoped cloud identity.
+6. **Next case-study milestones:** deploy the published image to staging Kubernetes; add Selenium browser tests against staging; require approval before production; demonstrate blue-green rollout; then add centralized logging and Slack alerts. Prometheus/Grafana monitoring can be demonstrated locally with the included setup. EKS and other cloud services can incur costs, so set them up only with your teacher's approval and a budget. Do not commit cloud credentials; use GitHub Actions secrets and scoped cloud identity.
 
 ### What to demonstrate
 
