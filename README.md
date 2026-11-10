@@ -71,7 +71,7 @@ docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up --build
 docker compose -f docker-compose.yml -f docker-compose.monitoring.yml exec api npm run seed --workspace=@shopeasy/api
 ```
 
-Open the storefront at <http://localhost:8080>, Prometheus at <http://localhost:9090/targets>, and Grafana at <http://localhost:3000>. Sign in to Grafana with `admin` / `admin` and set a new password if prompted. The **ShopEasy API** dashboard shows request rate, 95th-percentile latency, server errors, and API process memory. Browse or search products to generate traffic. Monitoring ports are bound to your own computer only.
+Open the storefront at <http://localhost:8080>, Prometheus at <http://localhost:9090/targets>, and Grafana at <http://localhost:3000>. Sign in to Grafana with `admin` / `admin` and set a new password if prompted. The **ShopEasy API** dashboard shows request rate, 95th-percentile latency, server errors, and API process memory. Browse or search products to generate traffic. Prometheus evaluates a `ShopEasyAPIHighServerErrorRate` alert when the API returns more than 6 server errors per minute for at least 1 minute; view its state at <http://localhost:9090/alerts>. This first alert appears in Prometheus but does not send email or Slack messages. Monitoring ports are bound to your own computer only.
 
 Stop the stack without deleting its stored data:
 
