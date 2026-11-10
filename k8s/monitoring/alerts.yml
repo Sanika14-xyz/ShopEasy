@@ -1,0 +1,11 @@
+groups:
+  - name: shopeasy-api-alerts
+    rules:
+      - alert: ShopEasyAPIHighServerErrorRate
+        expr: sum(rate(shopeasy_http_requests_total{status=~"5.."}[5m])) > 0.1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: ShopEasy API is returning server errors
+          description: The API has returned more than 6 server errors per minute for at least 1 minute.

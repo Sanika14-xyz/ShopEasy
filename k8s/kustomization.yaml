@@ -9,6 +9,7 @@ configMapGenerator:
   - name: prometheus-config
     files:
       - prometheus.yml=monitoring/prometheus.yml
+      - alerts.yml=monitoring/alerts.yml
   - name: grafana-datasources
     files:
       - prometheus.yml=monitoring/grafana/provisioning/datasources/prometheus.yml
