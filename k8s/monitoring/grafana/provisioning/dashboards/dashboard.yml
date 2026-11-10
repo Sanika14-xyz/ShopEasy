@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: ShopEasy
+    orgId: 1
+    folder: ShopEasy
+    type: file
+    disableDeletion: true
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards
