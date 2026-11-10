@@ -7,7 +7,8 @@ A small MERN-style e-commerce demo for practicing version control, automated tes
 - React + Vite storefront with a separate welcome page and searchable catalog, product details, cart, About, Contact, and FAQ pages; Express + MongoDB API
 - Jest/Supertest API tests that do not need a running database
 - Dockerfiles and Docker Compose for the app and MongoDB
-- GitHub Actions workflow for pull requests and pushes to `main`
+- GitHub Actions workflow for pull requests and pushes to `main`; its browser-test stack pins MongoDB 7 for compatibility with the hosted runner kernel, without changing the local or Kubernetes database
+- Selenium browser test in CI that searches the catalog and adds a product to the bag
 - Optional SonarQube Cloud analysis when its GitHub secrets are configured
 
 ## Step 1: Install the tools on Windows
@@ -60,7 +61,64 @@ docker compose down
 
 To also delete the local MongoDB data and start fresh, use `docker compose down -v`.
 
-## Step 4: Push this project to GitHub and watch CI
+## Step 4: Try Kubernetes locally (no cloud account or charges)
+
+The `k8s` folder contains a local Kubernetes deployment for Docker Desktop. It runs MongoDB, the API, the storefront, and a one-time job that seeds the 54 sample products. This is a learning setup, not a production security configuration.
+
+1. In Docker Desktop, open **Settings → Kubernetes** and enable Kubernetes. Wait until the Kubernetes engine reports that it is running.
+2. In PowerShell, check that Docker Desktop is the selected cluster:
+
+   ```powershell
+   kubectl config get-contexts
+   kubectl config use-context docker-desktop
+   kubectl get nodes
+   ```
+
+3. Stop the Compose containers temporarily so the local Kubernetes demo has enough resources. This keeps the Compose database volume; it does not delete it:
+
+   ```powershell
+   docker compose stop
+   ```
+
+4. Build the local images and apply the Kubernetes configuration:
+
+   ```powershell
+   docker compose build api web
+   kubectl apply -k k8s/
+   kubectl rollout status deployment/mongo -n shopeasy --timeout=180s
+   kubectl rollout status deployment/api -n shopeasy --timeout=180s
+   kubectl rollout status deployment/web -n shopeasy --timeout=180s
+   kubectl wait --for=condition=complete job/seed-products -n shopeasy --timeout=180s
+   ```
+
+5. Open another PowerShell terminal and forward the storefront to your computer:
+
+   ```powershell
+   kubectl port-forward service/web 8081:80 -n shopeasy
+   ```
+
+   Keep that terminal open and visit <http://localhost:8081>. To return to the Docker Compose app later, stop the port-forward with `Ctrl+C`, then run `docker compose start` and visit <http://localhost:8080>.
+
+   To run the Selenium shopping-flow test against Kubernetes, open another terminal while the port-forward is running:
+
+   ```powershell
+   $env:SHOPEASY_BASE_URL = "http://localhost:8081"
+   npm run test:e2e
+   ```
+
+   Chrome must be installed. The first run may take longer while Selenium downloads the matching ChromeDriver.
+
+Use `kubectl get pods,services -n shopeasy` to see the running resources. To stop the local Kubernetes demo and remove its namespace and database volume, run `kubectl delete namespace shopeasy`. This does not affect the separate Docker Compose database.
+
+If you rebuild the API image and want to run the seed job again, delete the completed job first, then re-apply it:
+
+```powershell
+kubectl delete job seed-products -n shopeasy
+kubectl apply -k k8s/
+kubectl wait --for=condition=complete job/seed-products -n shopeasy --timeout=180s
+```
+
+## Step 5: Push this project to GitHub and watch CI
 
 This project is connected to `https://github.com/Sanika14-xyz/ShopEasy.git`. Its GitHub repository already had an initial README commit, so the two histories must be merged once. After resolving that merge, push the combined project:
 
@@ -75,7 +133,7 @@ GitHub Actions runs the tests and frontend build on the push. You can then creat
 ## CI/CD learning map
 
 1. **Version control:** use a feature branch and pull request so changes are reviewed before they reach `main`.
-2. **Continuous integration:** `.github/workflows/ci.yml` installs from the lockfile, runs API tests, and builds the storefront on pushes and pull requests.
+2. **Continuous integration:** `.github/workflows/ci.yml` installs from the lockfile, runs API tests, builds the storefront, then starts the Docker Compose app and runs a Selenium browser test on pushes and pull requests. The browser test checks searching for a product and adding it to the bag. This is an automated integration test against a fresh local container stack; it is not yet a staging-cluster test.
 3. **Quality analysis:** connect a SonarQube Cloud project, update `sonar-project.properties` with your organization and project key, add the repository variable `SONAR_ENABLED` with value `true`, and add `SONAR_TOKEN` and `SONAR_HOST_URL` as repository Actions secrets.
 4. **Containerization and registry:** `api/Dockerfile`, `web/Dockerfile`, and `docker-compose.yml` package and run the app consistently. After CI passes on a push to `main`, the workflow publishes API and web images to GitHub Container Registry (GHCR), tagged `latest` and with the commit SHA. GHCR login uses the automatically provided `GITHUB_TOKEN`; no registry password is committed.
 5. **Current deployment:** Docker Compose starts the app locally. This is a live local demo, not yet a public website or an EKS deployment.
@@ -84,7 +142,7 @@ GitHub Actions runs the tests and frontend build on the push. You can then creat
 ### What to demonstrate
 
 1. Make a small change on a feature branch, push it, and open a pull request.
-2. Show that GitHub Actions runs tests and builds the frontend. To make GitHub block merging when a check fails, enable branch protection for `main` and require the workflow check.
+2. Show that GitHub Actions runs API tests, builds the frontend, and runs the Selenium shopping-flow test. To make GitHub block merging when a check fails, enable branch protection for `main` and require the workflow checks.
 3. Merge the pull request to `main`, then show the workflow publishing the API and web container images in the repository's **Packages** tab.
 4. Run the application locally with Docker Compose and show the storefront.
 5. Explain that automated checks catch errors earlier, while image publishing makes the tested version ready for a later staging deployment.
