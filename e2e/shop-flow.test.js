@@ -59,12 +59,16 @@ async function runShopFlow() {
     const cartLink = await driver.findElement(By.css('.cart-link'));
     await cartLink.sendKeys(Key.ENTER);
 
-    const cartTitle = await waitFor(
-      until.elementLocated(By.css('main h1')),
-      'waiting for the bag page'
+    await waitFor(
+      async () => driver.executeScript(
+        'return window.location.pathname === "/cart" && document.querySelector("main h1")?.textContent.trim() === "Your bag (1)";'
+      ),
+      'waiting for the bag page and expected item count'
     );
-    assert.equal(await cartTitle.getText(), 'Your bag (1)');
-    assert.match(await driver.findElement(By.css('.cart-list')).getText(), /Everyday Backpack/);
+    const cartContents = await driver.executeScript(
+      'return document.querySelector(".cart-list")?.innerText || "";'
+    );
+    assert.match(cartContents, /Everyday Backpack/);
 
     console.log('Selenium shop flow passed: search, add to bag, and verify cart.');
   } finally {
