@@ -41,19 +41,19 @@ jobs:
       - name: Set up Chrome
         uses: browser-actions/setup-chrome@v1
       - name: Start the app
-        run: docker compose up --build --detach --wait --wait-timeout 180
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up --build --detach --wait --wait-timeout 180
       - name: Seed the product catalog
-        run: docker compose exec --no-TTY api npm run seed --workspace=@shopeasy/api
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml exec --no-TTY api npm run seed --workspace=@shopeasy/api
       - name: Test search and shopping bag
         run: npm run test:e2e
       - name: Show container logs on failure
         if: failure()
         run: |
-          docker compose ps --all
-          docker compose logs --no-color
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml ps --all
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml logs --no-color
       - name: Stop the app
         if: always()
-        run: docker compose down
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml down
 
   publish-images:
     name: Publish Docker images

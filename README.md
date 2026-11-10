@@ -7,7 +7,7 @@ A small MERN-style e-commerce demo for practicing version control, automated tes
 - React + Vite storefront with a separate welcome page and searchable catalog, product details, cart, About, Contact, and FAQ pages; Express + MongoDB API
 - Jest/Supertest API tests that do not need a running database
 - Dockerfiles and Docker Compose for the app and MongoDB
-- GitHub Actions workflow for pull requests and pushes to `main`
+- GitHub Actions workflow for pull requests and pushes to `main`; its browser-test stack pins MongoDB 7 for compatibility with the hosted runner kernel, without changing the local or Kubernetes database
 - Selenium browser test in CI that searches the catalog and adds a product to the bag
 - Optional SonarQube Cloud analysis when its GitHub secrets are configured
 
