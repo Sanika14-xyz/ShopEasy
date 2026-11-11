@@ -1,0 +1,23 @@
+services:
+  prometheus:
+    volumes:
+      - ./k8s/monitoring/prometheus.slack.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      alertmanager:
+        condition: service_started
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+    volumes:
+      - ./k8s/monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    secrets:
+      - slack_webhook_url
+    ports:
+      - "127.0.0.1:9093:9093"
+
+secrets:
+  slack_webhook_url:
+    file: ./.secrets/slack_webhook_url

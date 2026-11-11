@@ -30,6 +30,7 @@ app.use((req, res, next) => {
   if (req.path === '/api/metrics') return next();
 
   const endTimer = requestDuration.startTimer();
+  const startedAt = process.hrtime.bigint();
   res.on('finish', () => {
     const labels = {
       method: req.method,
@@ -39,6 +40,16 @@ app.use((req, res, next) => {
 
     requestCounter.inc(labels);
     endTimer(labels);
+    console.log(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: 'info',
+      service: 'shopeasy-api',
+      event: 'http_request',
+      method: req.method,
+      route: labels.route,
+      status_code: res.statusCode,
+      duration_ms: Number((Number(process.hrtime.bigint() - startedAt) / 1e6).toFixed(3))
+    }));
   });
 
   next();

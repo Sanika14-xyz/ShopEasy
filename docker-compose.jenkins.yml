@@ -1,0 +1,6 @@
+services:
+  api:
+    image: shopeasy-api:${SHOPEASY_IMAGE_TAG:-jenkins-local}
+
+  web:
+    image: shopeasy-web:${SHOPEASY_IMAGE_TAG:-jenkins-local}
