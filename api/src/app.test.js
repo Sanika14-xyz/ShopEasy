@@ -9,6 +9,11 @@ const app = require('./app');
 describe('ShopEasy API', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   test('reports healthy status', async () => {
@@ -16,6 +21,23 @@ describe('ShopEasy API', () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ status: 'ok' });
+  });
+
+  test('writes structured request logs without query-string data', async () => {
+    const response = await request(app).get('/api/health?token=private-value');
+    const logEntry = JSON.parse(console.log.mock.calls[0][0]);
+
+    expect(response.status).toBe(200);
+    expect(logEntry).toMatchObject({
+      level: 'info',
+      service: 'shopeasy-api',
+      event: 'http_request',
+      method: 'GET',
+      route: '/api/health',
+      status_code: 200
+    });
+    expect(logEntry.duration_ms).toEqual(expect.any(Number));
+    expect(JSON.stringify(logEntry)).not.toContain('private-value');
   });
 
   test('exposes Prometheus metrics without recording the scrape itself', async () => {
@@ -42,12 +64,11 @@ describe('ShopEasy API', () => {
 
   test('reports a database failure as a server error', async () => {
     Product.find.mockRejectedValue(new Error('database unavailable'));
-    const errorLog = jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(console, 'error').mockImplementation(() => {});
 
     const response = await request(app).get('/api/products');
 
     expect(response.status).toBe(500);
     expect(response.body).toEqual({ error: 'An unexpected server error occurred.' });
-    errorLog.mockRestore();
   });
 });

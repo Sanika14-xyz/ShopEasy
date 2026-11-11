@@ -1,0 +1,38 @@
+filebeat.autodiscover:
+  providers:
+    - type: docker
+      host: unix:///var/run/docker.sock
+      templates:
+        - condition:
+            equals:
+              docker.container.labels.com.docker.compose.service: api
+          config:
+            - type: filestream
+              id: shopeasy-api-${data.docker.container.id}
+              prospector.scanner.symlinks: true
+              parsers:
+                - container: ~
+              paths:
+                - /var/lib/docker/containers/${data.docker.container.id}/*.log
+              processors:
+                - add_docker_metadata:
+                    host: unix:///var/run/docker.sock
+        - condition:
+            equals:
+              docker.container.labels.com.docker.compose.service: web
+          config:
+            - type: filestream
+              id: shopeasy-web-${data.docker.container.id}
+              prospector.scanner.symlinks: true
+              parsers:
+                - container: ~
+              paths:
+                - /var/lib/docker/containers/${data.docker.container.id}/*.log
+              processors:
+                - add_docker_metadata:
+                    host: unix:///var/run/docker.sock
+
+output.logstash:
+  hosts: ["logstash:5044"]
+
+logging.level: info
